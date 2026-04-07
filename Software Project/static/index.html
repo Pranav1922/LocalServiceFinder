@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Local Services Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0d0f1a;--surface:#151929;--card:#1c2035;--border:#252a40;
+    --accent:#6c63ff;--accent2:#ff6584;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+    --text:#e2e8f0;--muted:#64748b;--radius:14px;
+  }
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  /* scrollbar */
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  /* ── AUTH ── */
+  #auth-section{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 30% 20%,#2a1f6e33 0%,transparent 60%),
+               radial-gradient(ellipse at 80% 80%,#6c63ff22 0%,transparent 60%),var(--bg)}
+  .auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:40px 44px;width:100%;max-width:440px;box-shadow:0 24px 60px #0008}
+  .auth-logo{font-size:28px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ff6584);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+  .auth-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+  .tab-row{display:flex;gap:6px;margin-bottom:24px;background:var(--card);border-radius:10px;padding:4px}
+  .tab-btn{flex:1;padding:8px;border:none;background:none;color:var(--muted);border-radius:7px;
+    cursor:pointer;font-size:13px;font-weight:500;transition:.2s}
+  .tab-btn.active{background:var(--accent);color:#fff}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  input,select,textarea{width:100%;background:var(--card);border:1px solid var(--border);
+    border-radius:10px;padding:11px 14px;color:var(--text);font-family:inherit;font-size:14px;
+    outline:none;transition:.2s;margin-bottom:14px}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #6c63ff22}
+  select option{background:var(--card)}
+  .btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:.2s;letter-spacing:.3px}
+  .btn-accent{background:linear-gradient(135deg,#6c63ff,#8b83ff);color:#fff}
+  .btn-accent:hover{transform:translateY(-1px);box-shadow:0 8px 24px #6c63ff44}
+  .btn-sm{padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:none;transition:.2s}
+  .btn-green{background:#22c55e1a;color:var(--green);border:1px solid #22c55e33}
+  .btn-green:hover{background:#22c55e33}
+  .btn-red{background:#ef44441a;color:var(--red);border:1px solid #ef444433}
+  .btn-red:hover{background:#ef444430}
+  .btn-yellow{background:#f59e0b1a;color:var(--yellow);border:1px solid #f59e0b33}
+  .btn-yellow:hover{background:#f59e0b30}
+  .btn-purple{background:#6c63ff1a;color:var(--accent);border:1px solid #6c63ff33}
+  .btn-purple:hover{background:#6c63ff30}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #extra-fields{display:none}
+  .msg{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none}
+  .msg.error{background:#ef44441a;border:1px solid #ef444433;color:#fca5a5}
+  .msg.success{background:#22c55e1a;border:1px solid #22c55e33;color:#86efac}
+
+  /* ── SHELL ── */
+  #app{display:none;min-height:100vh;flex-direction:column}
+  nav{background:var(--surface);border-bottom:1px solid var(--border);
+    padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;
+    position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+  .nav-logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ff6584);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav-right{display:flex;align-items:center;gap:14px}
+  .nav-user{font-size:13px;color:var(--muted)}
+  .nav-role{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+  .role-customer{background:#6c63ff1a;color:var(--accent)}
+  .role-provider{background:#22c55e1a;color:var(--green)}
+  .role-admin{background:#f59e0b1a;color:var(--yellow)}
+  .logout-btn{border:1px solid var(--border);background:none;color:var(--muted);
+    padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+  .logout-btn:hover{border-color:var(--red);color:var(--red)}
+  .notif-btn{position:relative;background:none;border:none;cursor:pointer;
+    font-size:20px;color:var(--muted);padding:4px}
+  .badge{position:absolute;top:-2px;right:-4px;background:var(--red);color:#fff;
+    font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center}
+
+  main{flex:1;padding:28px;max-width:1200px;margin:0 auto;width:100%}
+
+  /* ── DASHBOARD HEADER ── */
+  .dash-header{margin-bottom:28px}
+  .dash-title{font-size:26px;font-weight:800;margin-bottom:4px}
+  .dash-sub{color:var(--muted);font-size:14px}
+
+  /* ── STATS ROW ── */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;display:flex;flex-direction:column;gap:6px}
+  .stat-icon{font-size:24px}
+  .stat-val{font-size:28px;font-weight:800}
+  .stat-lbl{font-size:12px;color:var(--muted);font-weight:500}
+
+  /* ── SECTION ── */
+  .section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;margin-bottom:22px}
+  .section-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;
+    align-items:center;gap:8px}
+
+  /* ── SEARCH BAR ── */
+  .search-bar{display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+  .search-bar input,.search-bar select{margin-bottom:0;flex:1;min-width:160px}
+  .search-bar .btn{width:auto;padding:11px 24px}
+
+  /* ── SERVICE CARDS ── */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;transition:.2s;cursor:default}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 12px 32px #6c63ff18}
+  .card-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--accent);margin-bottom:8px}
+  .card-name{font-size:16px;font-weight:700;margin-bottom:4px}
+  .card-desc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+  .card-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .card-price{font-size:20px;font-weight:800;color:var(--accent)}
+  .card-rating{font-size:13px;color:var(--yellow);font-weight:600}
+  .card-loc{font-size:12px;color:var(--muted)}
+  .card-provider{font-size:12px;color:var(--muted);margin-bottom:12px}
+
+  /* ── TABLE ── */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 14px;color:var(--muted);font-weight:600;
+    border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  td{padding:11px 14px;border-bottom:1px solid #1c2035;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#ffffff06}
+  .badge-status{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+  .s-pending{background:#f59e0b1a;color:var(--yellow)}
+  .s-confirmed{background:#6c63ff1a;color:var(--accent)}
+  .s-completed{background:#22c55e1a;color:var(--green)}
+  .s-cancelled{background:#ef44441a;color:var(--red)}
+  .s-open{background:#f59e0b1a;color:var(--yellow)}
+  .s-verified{background:#22c55e1a;color:var(--green)}
+  .s-pending-v{background:#f59e0b1a;color:var(--yellow)}
+
+  /* ── MODAL ── */
+  .modal-bg{position:fixed;inset:0;background:#000a;display:none;align-items:center;
+    justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+    box-shadow:0 32px 80px #0009}
+  .modal-title{font-size:18px;font-weight:700;margin-bottom:20px}
+  .modal-close{float:right;background:none;border:none;color:var(--muted);
+    font-size:22px;cursor:pointer;line-height:1}
+
+  /* ── NOTIF PANEL ── */
+  .notif-panel{position:fixed;top:70px;right:20px;width:320px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 40px #0008;
+    z-index:150;display:none;max-height:420px;overflow-y:auto}
+  .notif-panel.open{display:block}
+  .notif-head{padding:14px 16px;font-weight:700;font-size:14px;border-bottom:1px solid var(--border)}
+  .notif-item{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px}
+  .notif-item:last-child{border-bottom:none}
+  .notif-time{font-size:11px;color:var(--muted);margin-top:3px}
+  .empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+
+  /* ── FORM GRID ── */
+  .form-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-group{display:flex;flex-direction:column}
+  .form-group label{margin-bottom:5px}
+  .form-group input,.form-group select,.form-group textarea{margin-bottom:0}
+  .stars{display:flex;gap:4px;margin-bottom:14px}
+  .star{font-size:24px;cursor:pointer;color:var(--border);transition:.1s}
+  .star.on{color:var(--yellow)}
+  @media(max-width:600px){.form-2,.form-row{grid-template-columns:1fr}.search-bar{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ AUTH ══ -->
+<div id="auth-section">
+  <div class="auth-box">
+    <div class="auth-logo">⚡ LocalServices</div>
+    <div class="auth-sub">Find trusted local professionals</div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Register</button>
+    </div>
+    <div class="msg" id="auth-msg"></div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com"/>
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••"/>
+      <button class="btn btn-accent" onclick="doLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted)">
+        Demo: <b>admin@lsf.com / admin123</b><br>
+        or customer1@lsf.com / customer1123<br>
+        or provider1@lsf.com / provider1123
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none">
+      <div class="form-row">
+        <div><label>Full Name</label><input type="text" id="reg-name" placeholder="John Doe"/></div>
+        <div><label>Role</label>
+          <select id="reg-role" onchange="toggleExtraFields()">
+            <option value="customer">Customer</option>
+            <option value="provider">Service Provider</option>
+          </select>
+        </div>
+      </div>
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="you@example.com"/>
+      <label>Password</label>
+      <input type="password" id="reg-pass" placeholder="Min 6 characters"/>
+      <div id="extra-fields">
+        <div class="form-row">
+          <div><label>Category</label>
+            <select id="reg-cat">
+              <option>Plumber</option><option>Electrician</option>
+              <option>Cleaner</option><option>Carpenter</option><option>Painter</option>
+            </select>
+          </div>
+          <div><label>Location</label><input type="text" id="reg-loc" placeholder="City/Area"/></div>
+        </div>
+        <label>Registration Number</label>
+        <input type="text" id="reg-regnum" placeholder="e.g. REG1234"/>
+        <label>Bio</label>
+        <textarea id="reg-bio" rows="2" placeholder="Brief description of your services..."></textarea>
+      </div>
+      <button class="btn btn-accent" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ APP ══ -->
+<div id="app" style="display:none;flex-direction:column">
+  <nav>
+    <div class="nav-logo">⚡ LocalServices</div>
+    <div class="nav-right">
+      <button class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn">🔔<span class="badge" id="notif-badge" style="display:none">0</span></button>
+      <span class="nav-user" id="nav-name"></span>
+      <span class="nav-role" id="nav-role-badge"></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-head">🔔 Notifications</div>
+    <div id="notif-list"><div class="empty">No notifications</div></div>
+  </div>
+
+  <main id="main-content"></main>
+</div>
+
+<!-- ════════════════════════════════════════════════ BOOK MODAL ══ -->
+<div class="modal-bg" id="book-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('book-modal')">✕</button>
+    <div class="modal-title">📅 Book Service</div>
+    <div class="msg" id="book-msg"></div>
+    <input type="hidden" id="book-svc-id"/>
+    <label>Service</label>
+    <input type="text" id="book-svc-name" readonly style="color:var(--muted)"/>
+    <div class="form-2">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="book-date"/>
+      </div>
+      <div class="form-group">
+        <label>Timeslot</label>
+        <select id="book-timeslot">
+          <option>09:00 AM</option><option>11:00 AM</option>
+          <option>01:00 PM</option><option>03:00 PM</option><option>05:00 PM</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="submitBooking()">Confirm Booking</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ REVIEW MODAL ══ -->
+<div class="modal-bg" id="review-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('review-modal')">✕</button>
+    <div class="modal-title">⭐ Write a Review</div>
+    <div class="msg" id="review-msg"></div>
+    <input type="hidden" id="rv-provider-id"/>
+    <input type="hidden" id="rv-service-id"/>
+    <label>Rating</label>
+    <div class="stars" id="star-row">
+      <span class="star" data-v="1" onclick="setStar(1)">★</span>
+      <span class="star" data-v="2" onclick="setStar(2)">★</span>
+      <span class="star" data-v="3" onclick="setStar(3)">★</span>
+      <span class="star" data-v="4" onclick="setStar(4)">★</span>
+      <span class="star" data-v="5" onclick="setStar(5)">★</span>
+    </div>
+    <label>Comment</label>
+    <textarea id="rv-comment" rows="3" placeholder="Share your experience..."></textarea>
+    <button class="btn btn-accent" onclick="submitReview()">Submit Review</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════ ADD SERVICE MODAL ══ -->
+<div class="modal-bg" id="svc-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('svc-modal')">✕</button>
+    <div class="modal-title" id="svc-modal-title">➕ Add Service</div>
+    <div class="msg" id="svc-msg"></div>
+    <input type="hidden" id="svc-edit-id"/>
+    <label>Service Name</label>
+    <input type="text" id="svc-name" placeholder="e.g. Pipe Leak Repair"/>
+    <div class="form-2">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="svc-cat">
+          <option>Plumber</option><option>Electrician</option>
+          <option>Cleaner</option><option>Carpenter</option><option>Painter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Price (₹)</label>
+        <input type="number" id="svc-price" placeholder="0"/>
+      </div>
+    </div>
+    <label>Description</label>
+    <textarea id="svc-desc" rows="2" placeholder="Brief description..."></textarea>
+    <label>Availability</label>
+    <select id="svc-avail"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
+    <button class="btn btn-accent" onclick="submitService()">Save Service</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ COMPLAINT MODAL ══ -->
+<div class="modal-bg" id="complaint-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('complaint-modal')">✕</button>
+    <div class="modal-title">📣 File a Complaint</div>
+    <div class="msg" id="complaint-msg"></div>
+    <label>Description</label>
+    <textarea id="complaint-desc" rows="4" placeholder="Describe your issue in detail..."></textarea>
+    <button class="btn btn-accent" onclick="submitComplaint()">Submit Complaint</button>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('lsf_token') || '';
+let userRole = localStorage.getItem('lsf_role') || '';
+let userName = localStorage.getItem('lsf_name') || '';
+let userId   = localStorage.getItem('lsf_uid')  || '';
+let selectedRating = 0;
+
+// ── UTILS ───────────────────────────────────────────────────────────────────
+
+async function api(path, method='GET', body=null) {
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body)  opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const j = await r.json().catch(()=>({}));
+  return {ok: r.ok, status: r.status, data: j};
+}
+
+function showMsg(id, text, type='error') {
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'msg ' + type; el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 4000);
+}
+
+function statusBadge(s) {
+  const map={pending:'s-pending',confirmed:'s-confirmed',completed:'s-completed',
+             cancelled:'s-cancelled',open:'s-open',verified:'s-verified'};
+  return `<span class="badge-status ${map[s]||'s-pending'}">${s}</span>`;
+}
+
+function stars(n) { return '★'.repeat(n)+'☆'.repeat(5-n); }
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function fmtDate(d) { return d ? d.split('T')[0] : '—'; }
+
+// ── AUTH ────────────────────────────────────────────────────────────────────
+
+function switchTab(t) {
+  document.getElementById('login-form').style.display   = t==='login'    ? 'block':'none';
+  document.getElementById('register-form').style.display= t==='register' ? 'block':'none';
+  document.getElementById('tab-login').classList.toggle('active', t==='login');
+  document.getElementById('tab-register').classList.toggle('active', t==='register');
+  document.getElementById('auth-msg').style.display='none';
+}
+
+function toggleExtraFields() {
+  document.getElementById('extra-fields').style.display =
+    document.getElementById('reg-role').value === 'provider' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showMsg('auth-msg','Enter email and password'); return; }
+  const r = await api('/auth/login','POST',{email, password: pass});
+  if (r.ok) {
+    token = r.data.token; userRole = r.data.role;
+    userName = r.data.name; userId = r.data.user_id;
+    localStorage.setItem('lsf_token', token);
+    localStorage.setItem('lsf_role',  userRole);
+    localStorage.setItem('lsf_name',  userName);
+    localStorage.setItem('lsf_uid',   userId);
+    initApp();
+  } else {
+    showMsg('auth-msg', r.data.error || 'Login failed');
+  }
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const role  = document.getElementById('reg-role').value;
+  const email = document.getElementById('reg-email').value.trim();
+  const pw    = document.getElementById('reg-pass').value;
+  if (!name||!email||!pw) { showMsg('auth-msg','All fields required'); return; }
+  const body = {name, email, password: pw, role};
+  if (role === 'provider') {
+    body.category = document.getElementById('reg-cat').value;
+    body.location = document.getElementById('reg-loc').value;
+    body.registration_number = document.getElementById('reg-regnum').value;
+    body.bio = document.getElementById('reg-bio').value;
+  }
+  const r = await api('/auth/register','POST', body);
+  if (r.ok) {
+    token = r.data.token; userRole = r.data.role;
+    const prof = await api('/auth/profile');
+    userName = prof.data.name || name; userId = prof.data.id;
+    localStorage.setItem('lsf_token', token); localStorage.setItem('lsf_role', userRole);
+    localStorage.setItem('lsf_name', userName); localStorage.setItem('lsf_uid', userId);
+    initApp();
+  } else { showMsg('auth-msg', r.data.error || 'Registration failed'); }
+}
+
+function logout() {
+  ['lsf_token','lsf_role','lsf_name','lsf_uid'].forEach(k=>localStorage.removeItem(k));
+  token=''; userRole=''; userName=''; userId='';
+  document.getElementById('auth-section').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+
+function initApp() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('nav-name').textContent = userName;
+  const rb = document.getElementById('nav-role-badge');
+  rb.textContent = userRole; rb.className = 'nav-role role-' + userRole;
+  loadNotifications();
+  if      (userRole === 'admin')    renderAdmin();
+  else if (userRole === 'provider') renderProvider();
+  else                              renderCustomer();
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+
+async function loadNotifications() {
+  const r = await api('/notifications');
+  if (!r.ok) return;
+  const items = r.data;
+  const unread = items.filter(n=>!n.is_read).length;
+  const badge = document.getElementById('notif-badge');
+  if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline'; }
+  else badge.style.display = 'none';
+  const list = document.getElementById('notif-list');
+  if (items.length === 0) { list.innerHTML = '<div class="empty">No notifications</div>'; return; }
+  list.innerHTML = items.map(n=>`
+    <div class="notif-item">
+      <div>${n.message}</div>
+      <div class="notif-time">${fmtDate(n.created_at)}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel() {
+  document.getElementById('notif-panel').classList.toggle('open');
+  document.getElementById('notif-badge').style.display = 'none';
+}
+
+document.addEventListener('click', e=>{
+  const panel = document.getElementById('notif-panel');
+  if (!panel.contains(e.target) && !document.getElementById('notif-btn').contains(e.target))
+    panel.classList.remove('open');
+});
+
+// ── CUSTOMER DASHBOARD ───────────────────────────────────────────────────────
+
+async function renderCustomer() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="dash-header">
+      <div class="dash-title">👋 Welcome, ${userName}</div>
+      <div class="dash-sub">Find and book local services near you</div>
+    </div>
+    <div class="stats" id="cust-stats">
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">My Bookings</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" id="s-completed">—</div><div class="stat-lbl">Completed</div></div>
+      <div class="stat-card"><div class="stat-icon">🕐</div><div class="stat-val" id="s-pending">—</div><div class="stat-lbl">Pending</div></div>
+      <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val" id="s-svcs">—</div><div class="stat-lbl">Services Available</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔍 Search Services</div>
+      <div class="search-bar">
+        <select id="filter-cat"><option value="">All Categories</option>
+          <option>Plumber</option><option>Electrician</option>
+          <option>Cleaner</option><option>Carpenter</option><option>Painter</option>
+        </select>
+        <input type="text" id="filter-loc" placeholder="Location (e.g. Downtown)" style="margin-bottom:0"/>
+        <button class="btn btn-accent" onclick="searchServices()">Search</button>
+        <button class="btn btn-purple btn-sm" style="padding:11px 16px" onclick="searchServices()">All</button>
+      </div>
+      <div class="cards" id="svc-cards"><div class="empty">Loading services…</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title" style="justify-content:space-between">
+        <span>📋 My Bookings</span>
+        <button class="btn-sm btn-yellow" onclick="openComplaintModal()">📣 File Complaint</button>
+      </div>
+      <div class="table-wrap">
+        <table id="my-bookings-table">
+          <thead><tr>
+            <th>#</th><th>Service</th><th>Provider</th><th>Date</th><th>Timeslot</th>
+            <th>Cost</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="my-bookings-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>`;
+
+  loadCustStats(); searchServices(); loadMyBookings();
+}
+
+async function loadCustStats() {
+  const [bs, svcs] = await Promise.all([api('/bookings'), api('/services')]);
+  if (bs.ok) {
+    const b = bs.data;
+    document.getElementById('s-total').textContent = b.length;
+    document.getElementById('s-completed').textContent = b.filter(x=>x.status==='completed').length;
+    document.getElementById('s-pending').textContent = b.filter(x=>x.status==='pending').length;
+  }
+  if (svcs.ok) document.getElementById('s-svcs').textContent = svcs.data.length;
+}
+
+async function searchServices() {
+  const cat = document.getElementById('filter-cat').value;
+  const loc = document.getElementById('filter-loc').value.trim();
+  let qs = [cat?`category=${encodeURIComponent(cat)}`:'', loc?`location=${encodeURIComponent(loc)}`:'']
+            .filter(Boolean).join('&');
+  const r = await api('/services' + (qs?'?'+qs:''));
+  const cards = document.getElementById('svc-cards');
+  if (!r.ok || !r.data.length) { cards.innerHTML = '<div class="empty">No services found</div>'; return; }
+  cards.innerHTML = r.data.map(s=>`
+    <div class="card">
+      <div class="card-cat">${s.category}</div>
+      <div class="card-name">${s.name}</div>
+      <div class="card-desc">${s.description||'—'}</div>
+      <div class="card-provider">👤 ${s.provider_name} · 📍 ${s.location}</div>
+      <div class="card-meta">
+        <span class="card-price">₹${s.price}</span>
+        <span class="card-rating">★ ${s.rating||'N/A'}</span>
+      </div>
+      <button class="btn btn-accent" style="padding:9px;font-size:13px"
+        onclick="openBookModal(${s.id},'${s.name.replace(/'/g,"\\'")}')">Book Now</button>
+    </div>`).join('');
+}
+
+async function loadMyBookings() {
+  const r = await api('/bookings');
+  const tbody = document.getElementById('my-bookings-body');
+  if (!r.ok || !r.data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No bookings yet</td></tr>'; return; }
+  tbody.innerHTML = r.data.map(b=>`<tr>
+    <td>#${b.id}</td>
+    <td>${b.service_name}</td>
+    <td>${b.provider_name}</td>
+    <td>${b.date}</td>
+    <td>${b.timeslot}</td>
+    <td>₹${b.total_cost}</td>
+    <td>${statusBadge(b.status)}</td>
+    <td style="display:flex;gap:6px;flex-wrap:wrap">
+      ${b.status==='completed'?`<button class="btn-sm btn-yellow" onclick="openReviewModal(${b.provider_id},${b.service_id})">★ Review</button>`:''}
+      ${['pending','confirmed'].includes(b.status)?`<button class="btn-sm btn-red" onclick="cancelBooking(${b.id})">Cancel</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+// ── BOOK MODAL ───────────────────────────────────────────────────────────────
+
+function openBookModal(id, name) {
+  document.getElementById('book-svc-id').value  = id;
+  document.getElementById('book-svc-name').value = name;
+  document.getElementById('book-date').value = '';
+  document.getElementById('book-msg').style.display = 'none';
+  document.getElementById('book-modal').classList.add('open');
+}
+
+async function submitBooking() {
+  const sid    = document.getElementById('book-svc-id').value;
+  const date   = document.getElementById('book-date').value;
+  const ts     = document.getElementById('book-timeslot').value;
+  if (!date) { showMsg('book-msg','Please select a date'); return; }
+  const r = await api('/bookings','POST',{service_id: parseInt(sid), date, timeslot: ts});
+  if (r.ok) {
+    showMsg('book-msg','Booking confirmed! 🎉','success');
+    setTimeout(()=>{ closeModal('book-modal'); loadMyBookings(); loadCustStats(); }, 1500);
+  } else showMsg('book-msg', r.data.error||'Booking failed');
+}
+
+async function cancelBooking(bid) {
+  if (!confirm('Cancel this booking?')) return;
+  const r = await api(`/bookings/${bid}/cancel`,'PUT');
+  if (r.ok) loadMyBookings();
+  else alert(r.data.error || 'Failed to cancel');
+}
+
+// ── REVIEW MODAL ─────────────────────────────────────────────────────────────
+
+function openReviewModal(pid, sid) {
+  document.getElementById('rv-provider-id').value = pid;
+  document.getElementById('rv-service-id').value  = sid;
+  document.getElementById('rv-comment').value = '';
+  setStar(0);
+  document.getElementById('review-msg').style.display = 'none';
+  document.getElementById('review-modal').classList.add('open');
+}
+
+function setStar(n) {
+  selectedRating = n;
+  document.querySelectorAll('.star').forEach(s=>s.classList.toggle('on', +s.dataset.v<=n));
+}
+
+async function submitReview() {
+  if (!selectedRating) { showMsg('review-msg','Select a rating'); return; }
+  const pid = document.getElementById('rv-provider-id').value;
+  const sid = document.getElementById('rv-service-id').value;
+  const comment = document.getElementById('rv-comment').value;
+  const r = await api('/reviews','POST',{provider_id:+pid, service_id:+sid, rating:selectedRating, comment});
+  if (r.ok) {
+    showMsg('review-msg','Review submitted! Thank you ⭐','success');
+    setTimeout(()=>closeModal('review-modal'), 1500);
+  } else showMsg('review-msg', r.data.error||'Failed');
+}
+
+// ── COMPLAINT MODAL ──────────────────────────────────────────────────────────
+
+function openComplaintModal() {
+  document.getElementById('complaint-desc').value = '';
+  document.getElementById('complaint-msg').style.display = 'none';
+  document.getElementById('complaint-modal').classList.add('open');
+}
+
+async function submitComplaint() {
+  const desc = document.getElementById('complaint-desc').value.trim();
+  if (!desc) { showMsg('complaint-msg','Description required'); return; }
+  const r = await api('/complaints','POST',{description: desc});
+  if (r.ok) {
+    showMsg('complaint-msg','Complaint submitted!','success');
+    setTimeout(()=>closeModal('complaint-modal'), 1500);
+  } else showMsg('complaint-msg', r.data.error||'Failed');
+}
+
+// ── PROVIDER DASHBOARD ───────────────────────────────────────────────────────
+
+async function renderProvider() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="dash-header">
+      <div class="dash-title">🛠️ Provider Dashboard</div>
+      <div class="dash-sub">Manage your services and bookings</div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-val" id="ps-svcs">—</div><div class="stat-lbl">My Services</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val" id="ps-bks">—</div><div class="stat-lbl">Total Bookings</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" id="ps-comp">—</div><div class="stat-lbl">Completed</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-val" id="ps-rev">—</div><div class="stat-lbl">Reviews</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title" style="justify-content:space-between">
+        <span>📦 My Services</span>
+        <button class="btn-sm btn-green" onclick="openSvcModal()">+ Add Service</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Name</th><th>Category</th><th>Price</th><th>Availability</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="prov-svc-body"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 Incoming Bookings</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Customer</th><th>Service</th><th>Date</th><th>Timeslot</th>
+          <th>Cost</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="prov-booking-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⭐ Customer Reviews</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>#</th><th>Customer</th><th>Service</th><th>Rating</th><th>Comment</th><th>Date</th></tr></thead>
+        <tbody id="prov-review-body"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>`;
+
+  loadProviderData();
+}
+
+async function loadProviderData() {
+  const [svcs, bks, revs] = await Promise.all([
+    api('/providers/services', 'GET'),   // will 404 — use services endpoint via profile
+    api('/providers/bookings'),
+    api('/providers/reviews')
+  ]);
+
+  // Load provider's services via profile
+  const prof = await api('/auth/profile');
+  const spId = prof.data?.provider_profile?.id;
+
+  const svcsR = await api('/services');
+  const mySvcs = svcsR.ok ? svcsR.data.filter(s=>s.provider_id===spId) : [];
+  // Rebuild via admin all services approach — use provider bookings list
+  // Actually fetch all services and filter by provider
+  const allSvcs = await fetch(API+'/services', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).catch(()=>[]);
+
+  // Provider's own services (need special route)
+  let provSvcs = [];
+  if (prof.ok && prof.data.provider_profile) {
+    const pid = prof.data.provider_profile.id;
+    const sr = await api(`/providers/${pid}`);
+    provSvcs = sr.ok ? (sr.data.services || []) : [];
+  }
+
+  // Stats
+  if (bks.ok) {
+    document.getElementById('ps-bks').textContent  = bks.data.length;
+    document.getElementById('ps-comp').textContent = bks.data.filter(b=>b.status==='completed').length;
+  }
+  if (revs.ok) document.getElementById('ps-rev').textContent = revs.data.length;
+  document.getElementById('ps-svcs').textContent = provSvcs.length;
+
+  // Services table
+  const sTbody = document.getElementById('prov-svc-body');
+  if (!provSvcs.length) { sTbody.innerHTML = '<tr><td colspan="6" class="empty">No services yet</td></tr>'; }
+  else sTbody.innerHTML = provSvcs.map(s=>`<tr>
+    <td>#${s.id}</td><td>${s.name}</td><td>${s.category}</td>
+    <td>₹${s.price}</td><td>${statusBadge(s.availability==='available'?'completed':s.availability)}</td>
+    <td><button class="btn-sm btn-yellow" onclick="openSvcModal(${JSON.stringify(s).replace(/"/g,'&quot;')})">Edit</button></td>
+  </tr>`).join('');
+
+  // Bookings table
+  const bTbody = document.getElementById('prov-booking-body');
+  if (!bks.ok||!bks.data.length) { bTbody.innerHTML = '<tr><td colspan="8" class="empty">No bookings yet</td></tr>'; }
+  else bTbody.innerHTML = bks.data.map(b=>`<tr>
+    <td>#${b.id}</td><td>${b.customer_name}</td><td>${b.service_name}</td>
+    <td>${b.date}</td><td>${b.timeslot}</td><td>₹${b.total_cost}</td>
+    <td>${statusBadge(b.status)}</td>
+    <td style="display:flex;gap:4px;flex-wrap:wrap">
+      ${b.status==='pending'?`<button class="btn-sm btn-green" onclick="updateBooking(${b.id},'confirmed')">Confirm</button>`:''}
+      ${b.status==='confirmed'?`<button class="btn-sm btn-purple" onclick="updateBooking(${b.id},'completed')">Complete</button>`:''}
+      ${['pending','confirmed'].includes(b.status)?`<button class="btn-sm btn-red" onclick="updateBooking(${b.id},'cancelled')">Cancel</button>`:''}
+    </td>
+  </tr>`).join('');
+
+  // Reviews table
+  const rTbody = document.getElementById('prov-review-body');
+  if (!revs.ok||!revs.data.length) { rTbody.innerHTML = '<tr><td colspan="6" class="empty">No reviews yet</td></tr>'; }
+  else rTbody.innerHTML = revs.data.map(rv=>`<tr>
+    <td>#${rv.id}</td><td>${rv.customer_name}</td><td>${rv.service_name}</td>
+    <td style="color:var(--yellow)">${stars(rv.rating)}</td>
+    <td>${rv.comment||'—'}</td><td>${fmtDate(rv.created_at)}</td>
+  </tr>`).join('');
+}
+
+function openSvcModal(svc=null) {
+  document.getElementById('svc-modal-title').textContent = svc ? '✏️ Edit Service' : '➕ Add Service';
+  document.getElementById('svc-edit-id').value   = svc ? svc.id : '';
+  document.getElementById('svc-name').value      = svc ? svc.name : '';
+  document.getElementById('svc-cat').value       = svc ? svc.category : 'Plumber';
+  document.getElementById('svc-price').value     = svc ? svc.price : '';
+  document.getElementById('svc-desc').value      = svc ? svc.description : '';
+  document.getElementById('svc-avail').value     = svc ? svc.availability : 'available';
+  document.getElementById('svc-msg').style.display = 'none';
+  document.getElementById('svc-modal').classList.add('open');
+}
+
+async function submitService() {
+  const id    = document.getElementById('svc-edit-id').value;
+  const body  = {
+    name:         document.getElementById('svc-name').value.trim(),
+    category:     document.getElementById('svc-cat').value,
+    price:        parseFloat(document.getElementById('svc-price').value),
+    description:  document.getElementById('svc-desc').value,
+    availability: document.getElementById('svc-avail').value
+  };
+  if (!body.name||!body.price) { showMsg('svc-msg','Name and price required'); return; }
+  const r = id
+    ? await api(`/providers/services/${id}`,'PUT', body)
+    : await api('/providers/services','POST', body);
+  if (r.ok) {
+    showMsg('svc-msg','Service saved! ✅','success');
+    setTimeout(()=>{ closeModal('svc-modal'); loadProviderData(); }, 1200);
+  } else showMsg('svc-msg', r.data.error||'Failed');
+}
+
+async function updateBooking(bid, status) {
+  if (!confirm(`Set booking #${bid} to ${status}?`)) return;
+  const r = await api(`/providers/bookings/${bid}`,'PUT',{status});
+  if (r.ok) loadProviderData();
+  else alert(r.data.error||'Failed');
+}
+
+// ── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+
+async function renderAdmin() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="dash-header">
+      <div class="dash-title">🛡️ Admin Dashboard</div>
+      <div class="dash-sub">Manage the entire platform</div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="a-users">—</div><div class="stat-lbl">Total Users</div></div>
+      <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val" id="a-providers">—</div><div class="stat-lbl">Providers</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val" id="a-bookings">—</div><div class="stat-lbl">Bookings</div></div>
+      <div class="stat-card"><div class="stat-icon">📣</div><div class="stat-val" id="a-complaints">—</div><div class="stat-lbl">Complaints</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">👥 User Management</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="admin-users-body"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔧 Provider Verification</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Name</th><th>Category</th><th>Location</th><th>Rating</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="admin-providers-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 All Bookings</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Customer</th><th>Service</th><th>Date</th><th>Timeslot</th><th>Cost</th><th>Status</th>
+        </tr></thead>
+        <tbody id="admin-bookings-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📣 Complaints</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>#</th><th>Customer</th><th>Description</th><th>Status</th><th>Date</th>
+        </tr></thead>
+        <tbody id="admin-complaints-body"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody></table>
+      </div>
+    </div>`;
+
+  loadAdminData();
+}
+
+async function loadAdminData() {
+  const [users, providers, bookings, complaints] = await Promise.all([
+    api('/admin/users'), api('/providers'),
+    api('/admin/bookings'), api('/admin/complaints')
+  ]);
+
+  if (users.ok) {
+    document.getElementById('a-users').textContent = users.data.length;
+    document.getElementById('a-providers').textContent = users.data.filter(u=>u.role==='provider').length;
+    const tb = document.getElementById('admin-users-body');
+    tb.innerHTML = users.data.map(u=>`<tr>
+      <td>#${u.id}</td><td>${u.name}</td><td>${u.email}</td>
+      <td><span class="badge-status ${u.role==='admin'?'s-confirmed':u.role==='provider'?'s-completed':'s-pending'}">${u.role}</span></td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td>${u.role!=='admin'?`<button class="btn-sm btn-red" onclick="deleteUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">Delete</button>`:''}</td>
+    </tr>`).join('');
+  }
+
+  if (providers.ok) {
+    const pb = document.getElementById('admin-providers-body');
+    pb.innerHTML = providers.data.map(p=>`<tr>
+      <td>#${p.id}</td><td>${p.name}</td><td>${p.category}</td><td>${p.location}</td>
+      <td style="color:var(--yellow)">★ ${p.rating}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${p.status!=='verified'?`<button class="btn-sm btn-green" onclick="verifyProvider(${p.id},'verified')">Verify</button>`:''}
+        ${p.status!=='suspended'?`<button class="btn-sm btn-red" onclick="verifyProvider(${p.id},'suspended')">Suspend</button>`:''}
+      </td>
+    </tr>`).join('');
+  }
+
+  if (bookings.ok) {
+    document.getElementById('a-bookings').textContent = bookings.data.length;
+    const bb = document.getElementById('admin-bookings-body');
+    bb.innerHTML = bookings.data.map(b=>`<tr>
+      <td>#${b.id}</td><td>${b.customer_name}</td><td>${b.service_name}</td>
+      <td>${b.date}</td><td>${b.timeslot}</td><td>₹${b.total_cost}</td>
+      <td>${statusBadge(b.status)}</td>
+    </tr>`).join('');
+  }
+
+  if (complaints.ok) {
+    document.getElementById('a-complaints').textContent = complaints.data.length;
+    const cb = document.getElementById('admin-complaints-body');
+    cb.innerHTML = complaints.data.map(c=>`<tr>
+      <td>#${c.id}</td><td>${c.customer_name}</td>
+      <td style="max-width:300px">${c.description}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td>${fmtDate(c.created_at)}</td>
+    </tr>`).join('');
+  }
+}
+
+async function deleteUser(uid, name) {
+  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+  const r = await api(`/admin/users/${uid}`, 'DELETE');
+  if (r.ok) loadAdminData();
+  else alert(r.data.error || 'Failed to delete user');
+}
+
+async function verifyProvider(pid, status) {
+  const r = await api(`/admin/providers/${pid}/verify`, 'PUT', {status});
+  if (r.ok) loadAdminData();
+  else alert(r.data.error || 'Failed');
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  if (token) initApp();
+});
+</script>
+</body>
+</html>
